@@ -49,33 +49,14 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_target = m_compositor.CreateTargetForCurrentView();
         m_target.Root(m_backgroundVisual);
 
-        m_gameBoardWidth = 16;
-        m_gameBoardHeight = 16;
         m_tileSize = { 25, 25 };
         m_margin = { 2.5f, 2.5f };
         m_gameBoardMargin = { 100.0f, 100.0f };
 
         m_gameBoard = m_compositor.CreateContainerVisual();
-        m_gameBoard.Size((m_tileSize + m_margin) * float2(m_gameBoardWidth, m_gameBoardHeight));
         m_gameBoard.RelativeOffsetAdjustment({ 0.5f, 0.5f, 0.0f });
         m_gameBoard.AnchorPoint({ 0.5f, 0.5f });
         m_backgroundVisual.Children().InsertAtTop(m_gameBoard);
-
-        for (int x = 0; x < m_gameBoardWidth; x++)
-        {
-            for (int y = 0; y < m_gameBoardHeight; y++)
-            {
-                SpriteVisual visual = m_compositor.CreateSpriteVisual();
-                visual.Size(m_tileSize);
-                visual.Offset(float3((m_margin / 2.0f) + (float2(m_tileSize + m_margin) * float2(x, y)), 0.0f));
-                visual.Brush(m_compositor.CreateColorBrush(Colors::Blue()));
-
-                m_gameBoard.Children().InsertAtTop(visual);
-                m_tiles.push_back(visual);
-                m_mineStates.push_back(MineState::Empty);
-            }
-        }
-        GenerateMines(40);
 
         m_selectionVisual = m_compositor.CreateSpriteVisual();
         auto colorBrush = m_compositor.CreateColorBrush(Colors::Red());
@@ -91,6 +72,9 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_currentSelectionX = -1;
         m_currentSelectionY = -1;
 
+        //NewGame(16, 16, 40);
+        NewGame(32, 32, 40);
+
         m_sizeChanged = m_window.SizeChanged(auto_revoke, { this, &App::OnSizeChanged });
         UpdateBoardScale(GetWindowSize());
 
@@ -101,6 +85,39 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
         CoreDispatcher dispatcher = m_window.Dispatcher();
         dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessUntilQuit);
+    }
+
+    void NewGame(int boardWidth, int boardHeight, int mines)
+    {
+        m_gameBoardWidth = boardWidth;
+        m_gameBoardHeight = boardHeight;
+
+        m_gameBoard.Children().RemoveAll();
+
+        m_gameBoard.Size((m_tileSize + m_margin) * float2(m_gameBoardWidth, m_gameBoardHeight));
+
+        for (int x = 0; x < m_gameBoardWidth; x++)
+        {
+            for (int y = 0; y < m_gameBoardHeight; y++)
+            {
+                SpriteVisual visual = m_compositor.CreateSpriteVisual();
+                visual.Size(m_tileSize);
+                visual.Offset(float3((m_margin / 2.0f) + (float2(m_tileSize + m_margin) * float2(x, y)), 0.0f));
+                visual.Brush(m_compositor.CreateColorBrush(Colors::Blue()));
+
+                m_gameBoard.Children().InsertAtTop(visual);
+                m_tiles.push_back(visual);
+                m_mineStates.push_back(MineState::Empty);
+            }
+        }
+
+        GenerateMines(mines);
+
+        m_selectionVisual.IsVisible(false);
+        m_currentSelectionX = -1;
+        m_currentSelectionY = -1;
+
+        UpdateBoardScale(GetWindowSize());
     }
 
     void SetWindow(CoreWindow const & window)
