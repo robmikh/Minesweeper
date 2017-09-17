@@ -1,10 +1,21 @@
 #include "pch.h"
+#include <random>
+#include <queue>
 
 #include "winrt/Windows.Foundation.Metadata.h"
 #include "winrt/Windows.UI.Input.h"
 
 using namespace Windows::Graphics::Display;
 using namespace Windows::Foundation::Metadata;
+
+enum MineState
+{
+	Empty = 0,
+	Flag = 1,
+	Question = 2,
+
+	Last = 3
+};
 
 struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 {
@@ -38,8 +49,8 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		m_target = m_compositor.CreateTargetForCurrentView();
 		m_target.Root(m_backgroundVisual);
 
-		m_gameBoardWidth = 25;
-		m_gameBoardHeight = 25;
+		m_gameBoardWidth = 16;
+		m_gameBoardHeight = 16;
 		m_tileSize = { 25, 25 };
 		m_margin = { 2.5f, 2.5f };
 		m_gameBoardMargin = { 100.0f, 100.0f };
@@ -61,8 +72,10 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 				m_gameBoard.Children().InsertAtTop(visual);
 				m_tiles.push_back(visual);
+				m_mineStates.push_back(MineState::Empty);
 			}
 		}
+		GenerateMines(40);
 
 		m_selectionVisual = m_compositor.CreateSpriteVisual();
 		auto colorBrush = m_compositor.CreateColorBrush(Colors::Red());
@@ -145,11 +158,12 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 		int x = point.x / (m_tileSize.x + m_margin.x);
 		int y = point.y / (m_tileSize.y + m_margin.y);
+		int index = x * m_gameBoardHeight + y;
 
 		if ((x >= 0 && x < m_gameBoardWidth) &&
-			(y >= 0 && y < m_gameBoardHeight))
+			(y >= 0 && y < m_gameBoardHeight) &&
+			m_mineStates[index] != MineState::Last)
 		{
-			int index = x * m_gameBoardHeight + y;
 			auto visual = m_tiles[index];
 			
 			m_selectionVisual.ParentForTransform(visual);
@@ -170,19 +184,256 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		if (m_currentSelectionX >= 0.0f ||
 			m_currentSelectionY >= 0.0f)
 		{
-			int index = m_currentSelectionX * m_gameBoardHeight + m_currentSelectionY;
+			int index = ComputeIndex(m_currentSelectionX, m_currentSelectionY);
 			auto visual = m_tiles[index];
 
-			if (args.CurrentPoint().Properties().IsRightButtonPressed() ||
-				args.CurrentPoint().Properties().IsEraser())
+			if (m_mineStates[index] != MineState::Last)
 			{
-				visual.Brush(m_compositor.CreateColorBrush(Colors::Orange()));
+				if (args.CurrentPoint().Properties().IsRightButtonPressed() ||
+					args.CurrentPoint().Properties().IsEraser())
+				{
+					auto state = m_mineStates[index];
+					state = (MineState)((state + 1) % MineState::Last);
+					m_mineStates[index] = state;
+					visual.Brush(GetColorBrushFromMineState(state));
+				}
+				else if (m_mineStates[index] == MineState::Empty)
+				{
+					Sweep(m_currentSelectionX, m_currentSelectionY);
+				}
+			}
+		}
+	}
+
+	bool Sweep(int x, int y)
+	{
+		bool hitMine = false;
+		queue<int> sweeps;
+		sweeps.push(ComputeIndex(x, y));
+
+		while (!sweeps.empty())
+		{
+			int index = sweeps.front();
+			int currentx = ComputeXFromIndex(index);
+			int currenty = ComputeYFromIndex(index);
+
+			Reveal(index);
+
+			if (m_mines[index])
+			{
+				// We hit a mine, game over
+				hitMine = true;
+				break;
+			}
+
+			if (m_neighborCounts[index] == 0)
+			{
+				PushIfUnmarked(sweeps, currentx - 1, currenty - 1);
+				PushIfUnmarked(sweeps, currentx, currenty - 1);
+				PushIfUnmarked(sweeps, currentx + 1, currenty - 1);
+				PushIfUnmarked(sweeps, currentx + 1, currenty);
+				PushIfUnmarked(sweeps, currentx + 1, currenty + 1);
+				PushIfUnmarked(sweeps, currentx, currenty + 1);
+				PushIfUnmarked(sweeps, currentx - 1, currenty + 1);
+				PushIfUnmarked(sweeps, currentx - 1, currenty);
+			}
+
+			sweeps.pop();
+		}
+
+		return hitMine;
+	}
+	
+	void Reveal(int index)
+	{
+		auto visual = m_tiles[index];
+
+		if (m_mines[index])
+		{
+			visual.Brush(m_compositor.CreateColorBrush(Colors::Red()));
+		}
+		else
+		{
+			int count = m_neighborCounts[index];
+			visual.Brush(GetColorBrushFromMineCount(count));
+		}
+
+		m_mineStates[index] = MineState::Last;
+	}
+
+	bool IsInBoundsAndUnmarked(int x, int y)
+	{
+		int index = ComputeIndex(x, y);
+		return IsInBounds(x, y) && m_mineStates[index] == MineState::Empty;
+	}
+
+	void PushIfUnmarked(queue<int> &sweeps, int x, int y)
+	{
+		if (IsInBoundsAndUnmarked(x, y))
+		{
+			sweeps.push(ComputeIndex(x, y));
+		}
+	}
+
+	CompositionColorBrush GetColorBrushFromMineState(MineState state)
+	{
+		switch (state)
+		{
+		case MineState::Empty:
+			return m_compositor.CreateColorBrush(Colors::Blue());
+		case MineState::Flag:
+			return m_compositor.CreateColorBrush(Colors::Orange());
+		case MineState::Question:
+			return m_compositor.CreateColorBrush(Colors::LimeGreen());
+		default:
+			return m_compositor.CreateColorBrush(Colors::Black());
+		}
+	}
+
+	CompositionColorBrush GetColorBrushFromMineCount(int count)
+	{
+		switch (count)
+		{
+		case 1:
+			return m_compositor.CreateColorBrush(Colors::LightBlue());
+		case 2:
+			return m_compositor.CreateColorBrush(Colors::LightGreen());
+		case 3:
+			return m_compositor.CreateColorBrush(Colors::LightSalmon());
+		case 4:
+			return m_compositor.CreateColorBrush(Colors::LightSteelBlue());
+		case 5:
+			return m_compositor.CreateColorBrush(Colors::MediumPurple());
+		case 6:
+			return m_compositor.CreateColorBrush(Colors::LightCyan());
+		case 7:
+			return m_compositor.CreateColorBrush(Colors::Maroon());
+		case 8:
+			return m_compositor.CreateColorBrush(Colors::DarkSeaGreen());
+		default:
+			return m_compositor.CreateColorBrush(Colors::WhiteSmoke());
+		}
+	}
+
+	void GenerateMines(int numMines)
+	{
+		m_mines.clear(); 
+		for (int x = 0; x < m_gameBoardWidth; x++)
+		{
+			for (int y = 0; y < m_gameBoardHeight; y++)
+			{
+				m_mines.push_back(false);
+			}
+		}
+
+		srand(time(0));
+		for (int i = 0; i < numMines; i++)
+		{
+			int index = -1;
+			do
+			{
+				index = GenerateIndex(0, m_gameBoardWidth * m_gameBoardHeight - 1);
+			} while (m_mines[index]);
+
+			m_mines[index] = true;
+		}
+
+		m_neighborCounts.clear();
+		for (int i = 0; i < m_mines.size(); i++)
+		{
+			int x = ComputeXFromIndex(i);
+			int y = ComputeYFromIndex(i);
+
+			if (m_mines[i])
+			{
+				// -1 means a mine
+				m_neighborCounts.push_back(-1);
 			}
 			else
 			{
-				visual.Brush(m_compositor.CreateColorBrush(Colors::Green()));
+				int count = GetSurroundingMineCount(x, y);
+				m_neighborCounts.push_back(count);
 			}
 		}
+	}
+
+	int GenerateIndex(int min, int max)
+	{
+		return min + (rand() % static_cast<int>(max - min + 1));
+	}
+
+	int ComputeIndex(int x, int y)
+	{
+		return x * m_gameBoardHeight + y;
+	}
+
+	int ComputeXFromIndex(int index)
+	{
+		return index / m_gameBoardHeight;
+	}
+
+	int ComputeYFromIndex(int index)
+	{
+		return index % m_gameBoardHeight;
+	}
+
+	bool IsInBounds(int x, int y)
+	{
+		return ((x >= 0 && x < m_gameBoardWidth) &&
+			(y >= 0 && y < m_gameBoardHeight));
+	}
+
+	bool TestSpot(int x, int y)
+	{
+		return IsInBounds(x, y) && m_mines[ComputeIndex(x, y)];
+	}
+
+	int GetSurroundingMineCount(int x, int y)
+	{
+		int index = ComputeIndex(x, y);
+		int count = 0;
+
+		if (TestSpot(x + 1, y))
+		{
+			count++;
+		}
+
+		if (TestSpot(x - 1, y))
+		{
+			count++;
+		}
+
+		if (TestSpot(x, y + 1))
+		{
+			count++;
+		}
+
+		if (TestSpot(x, y - 1))
+		{
+			count++;
+		}
+
+		if (TestSpot(x + 1, y + 1))
+		{
+			count++;
+		}
+
+		if (TestSpot(x - 1, y - 1))
+		{
+			count++;
+		}
+
+		if (TestSpot(x - 1, y + 1))
+		{
+			count++;
+		}
+
+		if (TestSpot(x + 1, y - 1))
+		{
+			count++;
+		}
+
+		return count;
 	}
 
 	CoreApplicationView m_view{ nullptr };
@@ -203,6 +454,9 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 	float2 m_gameBoardMargin;
 	int m_currentSelectionX;
 	int m_currentSelectionY;
+	vector<MineState> m_mineStates;
+	vector<bool> m_mines;
+	vector<int> m_neighborCounts;
 
 	CoreWindow::SizeChanged_revoker m_sizeChanged;
 	CoreWindow::PointerMoved_revoker m_pointerMoved;
