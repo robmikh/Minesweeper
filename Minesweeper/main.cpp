@@ -16,8 +16,9 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 		return *this;
 	}
 
-	void Initialize(CoreApplicationView const &)
+	void Initialize(CoreApplicationView const & view)
 	{
+		m_view = view;
 	}
 
 	void Load(hstring const&)
@@ -30,31 +31,29 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
 	void Run()
 	{
-		CoreWindow window = CoreWindow::GetForCurrentThread();
-		window.Activate();
+		m_compositor = Compositor();
+		m_backgroundVisual = m_compositor.CreateSpriteVisual();
+		m_backgroundVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
+		m_backgroundVisual.Brush(m_compositor.CreateColorBrush(Colors::Red()));
+		m_target = m_compositor.CreateTargetForCurrentView();
+		m_target.Root(m_backgroundVisual);
 
-		CoreDispatcher dispatcher = window.Dispatcher();
+		m_window.Activate();
+
+		CoreDispatcher dispatcher = m_window.Dispatcher();
 		dispatcher.ProcessEvents(CoreProcessEventsOption::ProcessUntilQuit);
 	}
 
 	void SetWindow(CoreWindow const & window)
 	{
-		m_activated = window.Activated(auto_revoke, { this, &App::OnActivated });
+		m_window = window;
 	}
 
-	void OnActivated(CoreWindow window, WindowActivatedEventArgs)
-	{
-		m_activated.revoke();
+	CoreApplicationView m_view{ nullptr };
+	CoreWindow m_window{ nullptr };
 
-		Compositor compositor;
-		SpriteVisual visual = compositor.CreateSpriteVisual();
-		visual.RelativeSizeAdjustment({ 1.0f, 1.0f });
-		visual.Brush(compositor.CreateColorBrush(Colors::Red()));
-		m_target = compositor.CreateTargetForCurrentView();
-		m_target.Root(visual);
-	}
-
-	CoreWindow::Activated_revoker m_activated;
+	Compositor m_compositor{ nullptr };
+	SpriteVisual m_backgroundVisual{ nullptr };
 	CompositionTarget m_target{ nullptr };
 };
 
