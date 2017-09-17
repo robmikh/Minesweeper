@@ -173,7 +173,15 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 			int index = m_currentSelectionX * m_gameBoardHeight + m_currentSelectionY;
 			auto visual = m_tiles[index];
 
-			visual.Brush(m_compositor.CreateColorBrush(Colors::Green()));
+			if (args.CurrentPoint().Properties().IsRightButtonPressed() ||
+				args.CurrentPoint().Properties().IsEraser())
+			{
+				visual.Brush(m_compositor.CreateColorBrush(Colors::Orange()));
+			}
+			else
+			{
+				visual.Brush(m_compositor.CreateColorBrush(Colors::Green()));
+			}
 		}
 	}
 
