@@ -72,8 +72,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_currentSelectionX = -1;
         m_currentSelectionY = -1;
 
-        //NewGame(16, 16, 40);
-        NewGame(32, 32, 40);
+        NewGame(16, 16, 40);
 
         m_sizeChanged = m_window.SizeChanged(auto_revoke, { this, &App::OnSizeChanged });
         UpdateBoardScale(GetWindowSize());
@@ -227,14 +226,13 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         bool hitMine = false;
         queue<int> sweeps;
         sweeps.push(ComputeIndex(x, y));
+        Reveal(sweeps.front());
 
         while (!sweeps.empty())
         {
             int index = sweeps.front();
             int currentx = ComputeXFromIndex(index);
             int currenty = ComputeYFromIndex(index);
-
-            Reveal(index);
 
             if (m_mines[index])
             {
@@ -288,7 +286,9 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     {
         if (IsInBoundsAndUnmarked(x, y))
         {
-            sweeps.push(ComputeIndex(x, y));
+            int index = ComputeIndex(x, y);
+            Reveal(index);
+            sweeps.push(index);
         }
     }
 
