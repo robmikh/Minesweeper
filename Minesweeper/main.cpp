@@ -12,6 +12,7 @@ using namespace winrt;
 using namespace std;
 
 using namespace Windows::Graphics::Display;
+using namespace Windows::Foundation::Metadata;
 
 enum MineState
 {
@@ -60,6 +61,8 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_backgroundVisual.Brush(m_compositor.CreateColorBrush(Colors::White()));
         m_target = m_compositor.CreateTargetForCurrentView();
         m_target.Root(m_backgroundVisual);
+
+        FixDpiScaleForRS2();
 
         m_tileSize = { 25, 25 };
         m_margin = { 2.5f, 2.5f };
@@ -193,7 +196,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
             m_mineStates[index] != MineState::Last)
         {
             auto visual = m_tiles[index];
-            
+
             m_selectionVisual.ParentForTransform(visual);
             m_currentSelectionX = x;
             m_currentSelectionY = y;
@@ -270,7 +273,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
         return hitMine;
     }
-    
+
     void Reveal(int index)
     {
         auto visual = m_tiles[index];
@@ -346,7 +349,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
     void GenerateMines(int numMines)
     {
-        m_mines.clear(); 
+        m_mines.clear();
         for (int x = 0; x < m_gameBoardWidth; x++)
         {
             for (int y = 0; y < m_gameBoardHeight; y++)
@@ -463,6 +466,63 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         }
 
         return count;
+    }
+
+    void FixDpiScaleForRS2()
+    {
+        if (!ApiInformation::IsApiContractPresent(L"Windows.Foundation.UniversalApiContract", 5))
+        {
+            UpdateDpiScale();
+
+            auto displayInfo = DisplayInformation::GetForCurrentView();
+            displayInfo.DpiChanged([=](auto &&, auto &&)
+            {
+                UpdateDpiScale();
+            });
+        }
+    }
+
+    void UpdateDpiScale()
+    {
+        auto dpiVisual = GetDpiVisual();
+
+        if (dpiVisual != nullptr)
+        {
+            auto displayInfo = DisplayInformation::GetForCurrentView();
+            auto dpi = displayInfo.LogicalDpi() / 96.0f;
+
+            dpiVisual.RelativeSizeAdjustment(
+            {
+                1.0f / dpi,
+                1.0f / dpi
+            });
+        }
+    }
+
+    Visual GetDpiVisual()
+    {
+        auto currentVisual = m_target.Root();
+
+        if (currentVisual.Parent() == nullptr)
+        {
+            return nullptr;
+        }
+
+        do
+        {
+            currentVisual = currentVisual.Parent();
+            auto scale = currentVisual.Scale();
+            
+            if (scale.x > 1 &&
+                scale.y > 1 &&
+                scale.x == scale.y)
+            {
+                return currentVisual;
+            }
+
+        } while (currentVisual.Parent() != nullptr);
+
+        return nullptr;
     }
 
     CoreApplicationView m_view{ nullptr };
