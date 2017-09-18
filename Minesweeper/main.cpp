@@ -84,11 +84,6 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_currentSelectionX = -1;
         m_currentSelectionY = -1;
 
-        auto visual = m_compositor.CreateSpriteVisual();
-        visual.RelativeSizeAdjustment({ 1.0f, 1.0f });
-        visual.Brush(m_compositor.CreateSurfaceBrush(m_loader->LoadFromUri(Uri(L"ms-appx:///Assets/StoreLogo.png"))));
-        m_backgroundVisual.Children().InsertAtTop(visual);
-
         NewGame(16, 16, 40);
 
         m_sizeChanged = m_window.SizeChanged(auto_revoke, { this, &App::OnSizeChanged });

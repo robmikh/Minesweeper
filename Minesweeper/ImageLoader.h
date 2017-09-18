@@ -10,8 +10,8 @@ public:
 
 private:
     fire_and_forget DrawUriIntoSurface(
-        CompositionDrawingSurface const& surface, 
-        Uri const& uri);
+        CompositionDrawingSurface surface, 
+        Uri uri);
 
 private:
     static HRESULT CreateD3DDevice(

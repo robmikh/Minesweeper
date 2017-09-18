@@ -11,7 +11,7 @@ ImageLoader::ImageLoader(Compositor const & compositor)
     m_d2dDevice = CreateD2DDevice(m_factory, m_d3dDevice);
     m_wicFactory = CreateWICFactory();
 
-    m_graphics = CompositionInteropHelper::CreateCompositionGraphicsDevice(compositor, m_d3dDevice);
+    m_graphics = CompositionInteropHelper::CreateCompositionGraphicsDevice(compositor, m_d2dDevice);
 }
 
 ImageLoader::~ImageLoader()
@@ -36,8 +36,8 @@ ImageLoader::LoadFromUri(Uri const& uri)
 
 fire_and_forget
 ImageLoader::DrawUriIntoSurface(
-    CompositionDrawingSurface const& surface,
-    Uri const& uri)
+    CompositionDrawingSurface surface,
+    Uri uri)
 {
     auto file = await StorageFile::GetFileFromApplicationUriAsync(uri);
     auto randomAccessStream = await file.OpenReadAsync();

@@ -22,11 +22,11 @@ T from_abi(::IUnknown* from)
 winrt::CompositionGraphicsDevice
 CompositionInteropHelper::CreateCompositionGraphicsDevice(
     winrt::Compositor const& compositor,
-    winrt::com_ptr<ID3D11Device> const& device)
+    winrt::com_ptr<ID2D1Device> const& device)
 {
-    winrt::com_ptr<interop::ICompositorInterop> compositorInterop;
+    auto compositorInterop = compositor.as<interop::ICompositorInterop>();
+
     winrt::com_ptr<interop::ICompositionGraphicsDevice> graphicsInterop;
-    winrt::check_hresult(winrt::get_abi(compositor)->QueryInterface(winrt::guid_of<interop::ICompositorInterop>(), compositorInterop.put_void()));
     winrt::check_hresult(compositorInterop->CreateGraphicsDevice(device.get(), graphicsInterop.put()));
 
     auto graphics = from_abi<winrt::CompositionGraphicsDevice>(graphicsInterop.get());
@@ -38,8 +38,7 @@ CompositionInteropHelper::ResizeSurface(
     winrt::CompositionDrawingSurface const& surface,
     winrt::Size const& size)
 {
-    winrt::com_ptr<interop::ICompositionDrawingSurfaceInterop> surfaceInterop;
-    winrt::check_hresult(winrt::get_abi(surface)->QueryInterface(winrt::guid_of<interop::ICompositionDrawingSurfaceInterop>(), surfaceInterop.put_void()));
+    auto surfaceInterop = surface.as<interop::ICompositionDrawingSurfaceInterop>();
 
     SIZE newSize = {};
     newSize.cx = static_cast<LONG>(std::round(size.Width));
@@ -48,12 +47,11 @@ CompositionInteropHelper::ResizeSurface(
 }
 
 SurfaceContext::SurfaceContext(
-    winrt::CompositionDrawingSurface const& surface)
+    winrt::CompositionDrawingSurface surface)
 {
     winrt::com_ptr<ID2D1DeviceContext> context;
 
-    winrt::com_ptr<interop::ICompositionDrawingSurfaceInterop> surfaceInterop;
-    winrt::get_abi(surface)->QueryInterface(winrt::guid_of<interop::ICompositionDrawingSurfaceInterop>(), surfaceInterop.put_void());
+    auto surfaceInterop = surface.as<interop::ICompositionDrawingSurfaceInterop>();
 
     POINT offset = {};
     winrt::check_hresult(surfaceInterop->BeginDraw(nullptr, __uuidof(ID2D1DeviceContext), context.put_void(), &offset));
@@ -66,8 +64,7 @@ SurfaceContext::SurfaceContext(
 
 SurfaceContext::~SurfaceContext()
 {
-    winrt::com_ptr<interop::ICompositionDrawingSurfaceInterop> surfaceInterop;
-    winrt::get_abi(m_surface)->QueryInterface(winrt::guid_of<interop::ICompositionDrawingSurfaceInterop>(), surfaceInterop.put_void());
+    auto surfaceInterop = m_surface.as<interop::ICompositionDrawingSurfaceInterop>();
 
     winrt::check_hresult(surfaceInterop->EndDraw());
     m_context = nullptr;
