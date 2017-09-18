@@ -12,9 +12,15 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ImageLoader.cpp" />
+    <ClCompile Include="CompositionInteropHelper.cpp" />
+    <ClCompile Include="StreamHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="ImageLoader.h" />
+    <ClInclude Include="CompositionInteropHelper.h" />
+    <ClInclude Include="StreamHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LockScreenLogo.scale-200.png">

@@ -5,8 +5,13 @@
 #include "winrt/Windows.Foundation.Metadata.h"
 #include "winrt/Windows.UI.Input.h"
 
+using namespace winrt;
+#include "ImageLoader.h"
+
+
+using namespace std;
+
 using namespace Windows::Graphics::Display;
-using namespace Windows::Foundation::Metadata;
 
 enum MineState
 {
@@ -38,11 +43,18 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_sizeChanged.revoke();
         m_pointerMoved.revoke();
         m_pointerPressed.revoke();
+
+        if (m_loader != nullptr)
+        {
+            delete m_loader;
+        }
     }
 
     void Run()
     {
         m_compositor = Compositor();
+        m_loader = new ImageLoader(m_compositor);
+
         m_backgroundVisual = m_compositor.CreateSpriteVisual();
         m_backgroundVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
         m_backgroundVisual.Brush(m_compositor.CreateColorBrush(Colors::White()));
@@ -71,6 +83,11 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_backgroundVisual.Children().InsertAtTop(m_selectionVisual);
         m_currentSelectionX = -1;
         m_currentSelectionY = -1;
+
+        auto visual = m_compositor.CreateSpriteVisual();
+        visual.RelativeSizeAdjustment({ 1.0f, 1.0f });
+        visual.Brush(m_compositor.CreateSurfaceBrush(m_loader->LoadFromUri(Uri(L"ms-appx:///Assets/StoreLogo.png"))));
+        m_backgroundVisual.Children().InsertAtTop(visual);
 
         NewGame(16, 16, 40);
 
@@ -457,6 +474,8 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     CoreWindow m_window{ nullptr };
 
     Compositor m_compositor{ nullptr };
+    ImageLoader* m_loader{ nullptr };
+
     SpriteVisual m_backgroundVisual{ nullptr };
     CompositionTarget m_target{ nullptr };
 
