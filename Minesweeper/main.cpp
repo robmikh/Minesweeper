@@ -1,10 +1,15 @@
 #include "pch.h"
-#include <random>
-#include <queue>
 
-#include "winrt/Windows.Foundation.Metadata.h"
-#include "winrt/Windows.UI.Input.h"
+using namespace winrt;
+using namespace std;
 
+using namespace Windows::ApplicationModel::Core;
+using namespace Windows::Foundation;
+using namespace Windows::Foundation::Numerics;
+using namespace Windows::UI::Core;
+using namespace Windows::UI::Composition;
+using namespace Windows::System;
+using namespace Windows::UI;
 using namespace Windows::Graphics::Display;
 using namespace Windows::Foundation::Metadata;
 
@@ -181,7 +186,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
             m_mineStates[index] != MineState::Last)
         {
             auto visual = m_tiles[index];
-            
+
             m_selectionVisual.ParentForTransform(visual);
             m_currentSelectionX = x;
             m_currentSelectionY = y;
@@ -258,7 +263,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
         return hitMine;
     }
-    
+
     void Reveal(int index)
     {
         auto visual = m_tiles[index];
@@ -334,7 +339,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
     void GenerateMines(int numMines)
     {
-        m_mines.clear(); 
+        m_mines.clear();
         for (int x = 0; x < m_gameBoardWidth; x++)
         {
             for (int y = 0; y < m_gameBoardHeight; y++)
