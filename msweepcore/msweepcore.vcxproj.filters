@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="..\Minesweeper\Minesweeper.h" />
+    <ClInclude Include="Minesweeper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="..\Minesweeper\Minesweeper.cpp" />
+    <ClCompile Include="Minesweeper.cpp" />
   </ItemGroup>
 </Project>
