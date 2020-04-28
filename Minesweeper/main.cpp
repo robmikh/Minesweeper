@@ -39,12 +39,12 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     void Run()
     {
         m_compositor = Compositor();
-		m_windowRoot = m_compositor.CreateContainerVisual();
-		m_windowRoot.RelativeSizeAdjustment({ 1.0f, 1.0f });
+        m_windowRoot = m_compositor.CreateContainerVisual();
+        m_windowRoot.RelativeSizeAdjustment({ 1.0f, 1.0f });
         m_target = m_compositor.CreateTargetForCurrentView();
         m_target.Root(m_windowRoot);
 
-		m_minesweeper = std::make_unique<Minesweeper>(m_windowRoot, GetWindowSize());
+        m_minesweeper = std::make_unique<Minesweeper>(m_windowRoot, GetWindowSize());
 
         m_sizeChanged = m_window.SizeChanged(auto_revoke, { this, &App::OnSizeChanged });
         m_pointerMoved = m_window.PointerMoved(auto_revoke, { this, &App::OnPointerMoved });
@@ -64,7 +64,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     void OnSizeChanged(CoreWindow const & window, WindowSizeChangedEventArgs const & args)
     {
         auto windowSize = float2(args.Size());
-		m_minesweeper->OnParentSizeChanged(windowSize);
+        m_minesweeper->OnParentSizeChanged(windowSize);
     }
 
     float2 GetWindowSize()
@@ -75,14 +75,14 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     void OnPointerMoved(IInspectable const & window, PointerEventArgs const & args)
     {
         float2 point = args.CurrentPoint().Position();
-		m_minesweeper->OnPointerMoved(point);
+        m_minesweeper->OnPointerMoved(point);
     }
 
     void OnPointerPressed(IInspectable const & window, PointerEventArgs const & args)
     {
-		m_minesweeper->OnPointerPressed(
-			args.CurrentPoint().Properties().IsRightButtonPressed(),
-			args.CurrentPoint().Properties().IsEraser());
+        m_minesweeper->OnPointerPressed(
+            args.CurrentPoint().Properties().IsRightButtonPressed(),
+            args.CurrentPoint().Properties().IsEraser());
     }
 
     CoreApplicationView m_view{ nullptr };
@@ -90,9 +90,9 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
 
     Compositor m_compositor{ nullptr };
     CompositionTarget m_target{ nullptr };
-	ContainerVisual m_windowRoot{ nullptr };
+    ContainerVisual m_windowRoot{ nullptr };
 
-	std::unique_ptr<Minesweeper> m_minesweeper{ nullptr };
+    std::unique_ptr<Minesweeper> m_minesweeper{ nullptr };
 
     CoreWindow::SizeChanged_revoker m_sizeChanged;
     CoreWindow::PointerMoved_revoker m_pointerMoved;
