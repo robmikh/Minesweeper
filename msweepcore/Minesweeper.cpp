@@ -105,6 +105,7 @@ void Minesweeper::OnPointerPressed(
 			}
 			else if (m_mineStates[index] == MineState::Empty)
 			{
+				// TODO: Show a message if the user hits a mine
 				Sweep(m_currentSelectionX, m_currentSelectionY);
 			}
 		}
