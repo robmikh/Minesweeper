@@ -48,6 +48,9 @@ private:
 	bool IsInBounds(int x, int y);
 	bool TestSpot(int x, int y);
 	int GetSurroundingMineCount(int x, int y);
+	void PlayMineAnimation(int index, winrt::Windows::Foundation::TimeSpan const& delay);
+	void CheckTileForMineForAnimation(int x, int y, std::queue<int>& mineIndices, int& visitedTiles, int& minesInRing);
+	void PlayAnimationOnAllMines(int centerX, int centerY);
 
 private:
 	winrt::Windows::UI::Composition::Compositor m_compositor{ nullptr };
@@ -70,4 +73,7 @@ private:
 	winrt::Windows::Foundation::Numerics::float2 m_parentSize;
 	MineGenerationState m_mineGenerationState = MineGenerationState::Deferred;
 	int m_numMines = 0;
+
+	bool m_mineAnimationPlaying = false;
+	bool m_gameOver = false;
 };

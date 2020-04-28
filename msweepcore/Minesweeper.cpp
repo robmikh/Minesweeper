@@ -48,6 +48,11 @@ Minesweeper::Minesweeper(
 
 void Minesweeper::OnPointerMoved(float2 point)
 {
+	if (m_gameOver || m_mineAnimationPlaying)
+	{
+		return;
+	}
+
 	auto windowSize = m_parentSize;
 	auto scale = ComputeScaleFactor();
 	auto realBoardSize = m_gameBoard.Size() * scale;
@@ -88,6 +93,11 @@ void Minesweeper::OnPointerPressed(
 	bool isRightButton,
 	bool isEraser)
 {
+	if (m_gameOver && !m_mineAnimationPlaying)
+	{
+		NewGame(16, 16, 40);
+	}
+
 	if (m_currentSelectionX >= 0.0f ||
 		m_currentSelectionY >= 0.0f)
 	{
@@ -105,8 +115,33 @@ void Minesweeper::OnPointerPressed(
 			}
 			else if (m_mineStates[index] == MineState::Empty)
 			{
-				// TODO: Show a message if the user hits a mine
-				Sweep(m_currentSelectionX, m_currentSelectionY);
+				if (Sweep(m_currentSelectionX, m_currentSelectionY))
+				{
+					// We hit a mine! Setup and play an animation while locking any input.
+					auto hitX = m_currentSelectionX;
+					auto hitY = m_currentSelectionY;
+
+					// First, hide the selection visual and reset the selection
+					m_selectionVisual.IsVisible(false);
+					m_currentSelectionX = -1;
+					m_currentSelectionY = -1;
+
+					// Create an animation batch so that we can know when the animations complete.
+					auto batch = m_compositor.CreateScopedBatch(CompositionBatchTypes::Animation);
+
+					PlayAnimationOnAllMines(hitX, hitY);
+
+					// Subscribe to the completion event and complete the batch
+					batch.Completed([=](auto&, auto&)
+					{
+						m_mineAnimationPlaying = false;
+					});
+					batch.End();
+
+					m_mineAnimationPlaying = true;
+					m_gameOver = true;
+				}
+				// TODO: Detect that the player has won
 			}
 		}
 	}
@@ -118,6 +153,8 @@ void Minesweeper::NewGame(int boardWidth, int boardHeight, int mines)
 	m_gameBoardHeight = boardHeight;
 
 	m_gameBoard.Children().RemoveAll();
+	m_tiles.clear();
+	m_mineStates.clear();
 
 	m_gameBoard.Size((m_tileSize + m_margin) * float2(m_gameBoardWidth, m_gameBoardHeight));
 
@@ -127,6 +164,7 @@ void Minesweeper::NewGame(int boardWidth, int boardHeight, int mines)
 		{
 			SpriteVisual visual = m_compositor.CreateSpriteVisual();
 			visual.Size(m_tileSize);
+			visual.CenterPoint({ m_tileSize / 2.0f, 0.0f });
 			visual.Offset(float3((m_margin / 2.0f) + (float2(m_tileSize + m_margin) * float2(x, y)), 0.0f));
 			visual.Brush(m_compositor.CreateColorBrush(Colors::Blue()));
 
@@ -136,6 +174,8 @@ void Minesweeper::NewGame(int boardWidth, int boardHeight, int mines)
 		}
 	}
 
+	m_mineAnimationPlaying = false;
+	m_gameOver = false;
 	m_mineGenerationState = MineGenerationState::Deferred;
 	m_numMines = mines;
 
@@ -409,4 +449,116 @@ int Minesweeper::GetSurroundingMineCount(int x, int y)
 	}
 
 	return count;
+}
+
+void Minesweeper::PlayMineAnimation(int index, TimeSpan const& delay)
+{
+	auto visual = m_tiles[index];
+	// First, we need to promote the visual to the top.
+	auto parentChildren = visual.Parent().Children();
+	parentChildren.Remove(visual);
+	parentChildren.InsertAtTop(visual);
+	// Make sure the visual has the mine brush
+	visual.Brush(m_compositor.CreateColorBrush(Colors::Red()));
+	// Play the animation
+	auto animation = m_compositor.CreateVector3KeyFrameAnimation();
+	animation.InsertKeyFrame(0.0f, { 1.0f, 1.0f, 1.0f });
+	animation.InsertKeyFrame(0.7f, { 2.0f, 2.0f, 1.0f });
+	animation.InsertKeyFrame(1.0f, { 1.0f, 1.0f, 1.0f });
+	animation.Duration(std::chrono::milliseconds(600));
+	animation.DelayTime(delay);
+	animation.IterationBehavior(AnimationIterationBehavior::Count);
+	animation.IterationCount(1);
+	visual.StartAnimation(L"Scale", animation);
+}
+
+void Minesweeper::CheckTileForMineForAnimation(int x, int y, std::queue<int>& mineIndices, int& visitedTiles, int& minesInRing)
+{
+	if (IsInBounds(x, y))
+	{
+		auto tileIndex = ComputeIndex(x, y);
+		if (m_mines[tileIndex])
+		{
+			mineIndices.push(tileIndex);
+			minesInRing++;
+		}
+		visitedTiles++;
+	}
+}
+
+void Minesweeper::PlayAnimationOnAllMines(int centerX, int centerY)
+{
+	// Build a queue that contains the indices of the mines in a spiral starting from the clicked mine.
+	std::queue<int> mineIndices;
+	std::queue<int> minesPerRing;
+	int visitedTiles = 0;
+	int ringLevel = 0;
+	while (visitedTiles < m_tiles.size())
+	{
+		if (ringLevel == 0)
+		{
+			auto hitMineIndex = ComputeIndex(centerX, centerY);
+			mineIndices.push(hitMineIndex);
+			minesPerRing.push(1);
+			visitedTiles++;
+		}
+		else
+		{
+			auto currentMinesInRing = 0;
+
+			// Check the top side
+			for (auto x = centerX - ringLevel; x <= (centerX + ringLevel); x++)
+			{
+				auto y = centerY - ringLevel;
+				CheckTileForMineForAnimation(x, y, mineIndices, visitedTiles, currentMinesInRing);
+			}
+
+			// Check the right side
+			for (auto y = centerY - ringLevel + 1; y <= (centerY + ringLevel); y++)
+			{
+				auto x = centerX + ringLevel;
+				CheckTileForMineForAnimation(x, y, mineIndices, visitedTiles, currentMinesInRing);
+			}
+
+			// Check the bottom side
+			for (auto x = centerX - ringLevel; x < (centerX + ringLevel); x++)
+			{
+				auto y = centerY + ringLevel;
+				CheckTileForMineForAnimation(x, y, mineIndices, visitedTiles, currentMinesInRing);
+			}
+
+			// Check the left side
+			for (auto y = centerY - ringLevel + 1; y < (centerY + ringLevel); y++)
+			{
+				auto x = centerX - ringLevel;
+				CheckTileForMineForAnimation(x, y, mineIndices, visitedTiles, currentMinesInRing);
+			}
+
+			if (currentMinesInRing > 0)
+			{
+				minesPerRing.push(currentMinesInRing);
+			}
+		}
+		ringLevel++;
+	}
+
+	// Iterate and animate each mine
+	auto animationDelayStep = std::chrono::milliseconds(100);
+	auto currentDelay = std::chrono::milliseconds(0);
+	auto currentMinesCount = 0;
+	while (!mineIndices.empty())
+	{
+		auto mineIndex = mineIndices.front();
+		PlayMineAnimation(mineIndex, currentDelay);
+		currentMinesCount++;
+
+		auto minesOnCurrentLevel = minesPerRing.front();
+		if (currentMinesCount == minesOnCurrentLevel)
+		{
+			currentMinesCount = 0;
+			minesPerRing.pop();
+			currentDelay += animationDelayStep;
+		}
+		mineIndices.pop();
+	}
 }
