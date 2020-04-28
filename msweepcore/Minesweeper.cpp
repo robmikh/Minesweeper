@@ -60,8 +60,7 @@ void Minesweeper::OnPointerMoved(float2 point)
 	int y = point.y / (m_tileSize.y + m_margin.y);
 	int index = x * m_gameBoardHeight + y;
 
-	if ((x >= 0 && x < m_gameBoardWidth) &&
-		(y >= 0 && y < m_gameBoardHeight) &&
+	if (IsInBounds(x, y) &&
 		m_mineStates[index] != MineState::Last)
 	{
 		auto visual = m_tiles[index];
@@ -97,8 +96,7 @@ void Minesweeper::OnPointerPressed(
 
 		if (m_mineStates[index] != MineState::Last)
 		{
-			if (isRightButton ||
-				isEraser)
+			if (isRightButton || isEraser)
 			{
 				auto state = m_mineStates[index];
 				state = (MineState)((state + 1) % MineState::Last);
@@ -357,7 +355,6 @@ bool Minesweeper::TestSpot(int x, int y)
 
 int Minesweeper::GetSurroundingMineCount(int x, int y)
 {
-	int index = ComputeIndex(x, y);
 	int count = 0;
 
 	if (TestSpot(x + 1, y))
