@@ -9,6 +9,12 @@ enum  MineState
 	Last = 3
 };
 
+enum class MineGenerationState
+{
+	Deferred,
+	Generated,
+};
+
 class Minesweeper
 {
 public:
@@ -34,7 +40,7 @@ private:
 	void PushIfUnmarked(std::queue<int>& sweeps, int x, int y);
 	winrt::Windows::UI::Composition::CompositionColorBrush GetColorBrushFromMineState(MineState state);
 	winrt::Windows::UI::Composition::CompositionColorBrush GetColorBrushFromMineCount(int count);
-	void GenerateMines(int numMines);
+	void GenerateMines(int numMines, int excludeX, int excludeY);
 	int GenerateIndex(int min, int max);
 	int ComputeIndex(int x, int y);
 	int ComputeXFromIndex(int index);
@@ -62,4 +68,6 @@ private:
 	std::vector<bool> m_mines;
 	std::vector<int> m_neighborCounts;
 	winrt::Windows::Foundation::Numerics::float2 m_parentSize;
+	MineGenerationState m_mineGenerationState = MineGenerationState::Deferred;
+	int m_numMines = 0;
 };

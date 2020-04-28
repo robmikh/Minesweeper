@@ -135,7 +135,8 @@ void Minesweeper::NewGame(int boardWidth, int boardHeight, int mines)
 		}
 	}
 
-	GenerateMines(mines);
+	m_mineGenerationState = MineGenerationState::Deferred;
+	m_numMines = mines;
 
 	m_selectionVisual.IsVisible(false);
 	m_currentSelectionX = -1;
@@ -171,6 +172,14 @@ float Minesweeper::ComputeScaleFactor(float2 windowSize)
 
 bool Minesweeper::Sweep(int x, int y)
 {
+	if (m_mineGenerationState == MineGenerationState::Deferred)
+	{
+		// We don't want the first thing that the user clicks to be a mine. 
+		// Generate mines but avoid putting it where the user clicked.
+		GenerateMines(m_numMines, x, y);
+		m_mineGenerationState = MineGenerationState::Generated;
+	}
+
 	bool hitMine = false;
 	std::queue<int> sweeps;
 	sweeps.push(ComputeIndex(x, y));
@@ -280,7 +289,7 @@ CompositionColorBrush Minesweeper::GetColorBrushFromMineCount(int count)
 	}
 }
 
-void Minesweeper::GenerateMines(int numMines)
+void Minesweeper::GenerateMines(int numMines, int excludeX, int excludeY)
 {
 	m_mines.clear();
 	for (int x = 0; x < m_gameBoardWidth; x++)
@@ -295,10 +304,11 @@ void Minesweeper::GenerateMines(int numMines)
 	for (int i = 0; i < numMines; i++)
 	{
 		int index = -1;
+		auto excludeIndex = ComputeIndex(excludeX, excludeY);
 		do
 		{
 			index = GenerateIndex(0, m_gameBoardWidth * m_gameBoardHeight - 1);
-		} while (m_mines[index]);
+		} while (index == excludeIndex || m_mines[index]);
 
 		m_mines[index] = true;
 	}
