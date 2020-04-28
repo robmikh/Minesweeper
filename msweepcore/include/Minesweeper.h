@@ -5,8 +5,7 @@ enum  MineState
     Empty = 0,
     Flag = 1,
     Question = 2,
-
-    Last = 3
+    Revealed = 3
 };
 
 enum class MineGenerationState

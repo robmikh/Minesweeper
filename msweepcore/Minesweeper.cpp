@@ -66,7 +66,7 @@ void Minesweeper::OnPointerMoved(float2 point)
     int index = x * m_gameBoardHeight + y;
 
     if (IsInBounds(x, y) &&
-        m_mineStates[index] != MineState::Last)
+        m_mineStates[index] != MineState::Revealed)
     {
         auto visual = m_tiles[index];
 
@@ -104,12 +104,12 @@ void Minesweeper::OnPointerPressed(
         int index = ComputeIndex(m_currentSelectionX, m_currentSelectionY);
         auto visual = m_tiles[index];
 
-        if (m_mineStates[index] != MineState::Last)
+        if (m_mineStates[index] != MineState::Revealed)
         {
             if (isRightButton || isEraser)
             {
                 auto state = m_mineStates[index];
-                state = (MineState)((state + 1) % MineState::Last);
+                state = (MineState)((state + 1) % MineState::Revealed);
                 m_mineStates[index] = state;
                 visual.Brush(GetColorBrushFromMineState(state));
             }
@@ -271,7 +271,7 @@ void Minesweeper::Reveal(int index)
         visual.Brush(GetColorBrushFromMineCount(count));
     }
 
-    m_mineStates[index] = MineState::Last;
+    m_mineStates[index] = MineState::Revealed;
 }
 
 bool Minesweeper::IsInBoundsAndUnmarked(int x, int y)
