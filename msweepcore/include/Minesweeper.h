@@ -50,6 +50,11 @@ private:
     void PlayMineAnimation(int index, winrt::Windows::Foundation::TimeSpan const& delay);
     void CheckTileForMineForAnimation(int x, int y, std::queue<int>& mineIndices, int& visitedTiles, int& minesInRing);
     void PlayAnimationOnAllMines(int centerX, int centerY);
+    winrt::Windows::UI::Composition::CompositionShape GetShapeFromMineCount(int count);
+    winrt::Windows::UI::Composition::CompositionSpriteShape GetDotShape(
+        winrt::Windows::UI::Composition::CompositionGeometry const& geometry,
+        winrt::Windows::UI::Composition::CompositionColorBrush const& brush,
+        winrt::Windows::Foundation::Numerics::float2 offset);
 
 private:
     winrt::Windows::UI::Composition::Compositor m_compositor{ nullptr };

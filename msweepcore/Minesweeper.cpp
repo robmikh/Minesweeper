@@ -95,7 +95,7 @@ void Minesweeper::OnPointerPressed(
 {
     if (m_gameOver && !m_mineAnimationPlaying)
     {
-        NewGame(16, 16, 40);
+        NewGame(m_gameBoardWidth, m_gameBoardWidth, m_numMines);
     }
 
     if (m_currentSelectionX >= 0.0f ||
@@ -271,6 +271,15 @@ void Minesweeper::Reveal(int index)
     {
         int count = m_neighborCounts[index];
         visual.Brush(GetColorBrushFromMineCount(count));
+
+        if (count > 0)
+        {
+            auto shape = GetShapeFromMineCount(count);
+            auto shapeVisual = m_compositor.CreateShapeVisual();
+            shapeVisual.RelativeSizeAdjustment({ 1, 1 });
+            shapeVisual.Shapes().Append(shape);
+            visual.Children().InsertAtTop(shapeVisual);
+        }
     }
 
     m_mineStates[index] = MineState::Revealed;
@@ -563,4 +572,114 @@ void Minesweeper::PlayAnimationOnAllMines(int centerX, int centerY)
         }
         mineIndices.pop();
     }
+}
+
+CompositionShape Minesweeper::GetShapeFromMineCount(int count)
+{
+    auto containerShape = m_compositor.CreateContainerShape();
+    auto circleGeometry = m_compositor.CreateEllipseGeometry();
+    circleGeometry.Radius(m_tileSize / 12.0f);
+    auto dotBrush = m_compositor.CreateColorBrush(Colors::Black());
+
+    switch (count)
+    {
+    case 1:
+    {
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, m_tileSize / 2.0f));
+    }
+        break;
+    case 2:
+    {
+        auto thirdX = m_tileSize.x / 3.0f;
+        auto halfY = m_tileSize.y / 2.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { thirdX , halfY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { thirdX * 2.0f , halfY }));
+    }
+        break;
+    case 3:
+    {
+        auto fourthX = m_tileSize.x / 4.0f;
+        auto fourthY = m_tileSize.y / 4.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, m_tileSize / 2.0f));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY }));
+    }
+    break;
+        break;
+    case 4:
+    {
+        auto thirdX = m_tileSize.x / 3.0f;
+        auto thirdY = m_tileSize.y / 3.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { thirdX , thirdY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { thirdX * 2.0f , thirdY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { thirdX , thirdY * 2.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { thirdX * 2.0f , thirdY * 2.0f }));
+    }
+        break;
+    case 5:
+    {
+        auto fourthX = m_tileSize.x / 4.0f;
+        auto fourthY = m_tileSize.y / 4.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, m_tileSize / 2.0f));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 3.0f }));
+    }
+        break;
+    case 6:
+    {
+        auto fourthX = m_tileSize.x / 4.0f;
+        auto fourthY = m_tileSize.y / 4.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 2.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 2.0f }));
+    }
+        break;
+    case 7:
+    {
+        auto fourthX = m_tileSize.x / 4.0f;
+        auto fourthY = m_tileSize.y / 4.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 2.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 2.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, m_tileSize / 2.0f));
+    }
+        break;
+    case 8:
+    {
+        auto fourthX = m_tileSize.x / 4.0f;
+        auto fourthY = m_tileSize.y / 4.0f;
+        auto halfX = m_tileSize.y / 2.0f;
+        auto thirdY = m_tileSize.y / 3.0f;
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 2.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX, fourthY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 3.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { fourthX * 3.0f, fourthY * 2.0f }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { halfX, thirdY }));
+        containerShape.Shapes().Append(GetDotShape(circleGeometry, dotBrush, { halfX, thirdY * 2.0f }));
+    }
+        break;
+    }
+
+    return containerShape;
+}
+
+CompositionSpriteShape Minesweeper::GetDotShape(
+    CompositionGeometry const& geometry,
+    CompositionColorBrush const& brush,
+    float2 offset)
+{
+    auto shape = m_compositor.CreateSpriteShape(geometry);
+    shape.FillBrush(brush);
+    shape.Offset(offset);
+    return shape;
 }
