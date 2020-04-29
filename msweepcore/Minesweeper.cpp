@@ -201,13 +201,15 @@ float Minesweeper::ComputeScaleFactor()
 float Minesweeper::ComputeScaleFactor(float2 windowSize)
 {
     auto boardSize = m_gameBoard.Size() + m_gameBoardMargin;
-    float scaleFactor = windowSize.y / boardSize.y;
 
-    if (boardSize.x > windowSize.x)
+    auto windowRatio = windowSize.x / windowSize.y;
+    auto boardRatio = boardSize.x / boardSize.y;
+
+    auto scaleFactor = windowSize.x / boardSize.x;
+    if (windowRatio > boardRatio)
     {
-        scaleFactor = windowSize.x / boardSize.x;
+        scaleFactor = windowSize.y / boardSize.y;
     }
-
     return scaleFactor;
 }
 
