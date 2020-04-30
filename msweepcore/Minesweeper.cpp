@@ -17,6 +17,7 @@ Minesweeper::Minesweeper(
 
     m_root.RelativeSizeAdjustment({ 1.0f, 1.0f });
     m_root.Brush(m_compositor.CreateColorBrush(Colors::White()));
+    m_root.BorderMode(CompositionBorderMode::Hard);
     parentVisual.Children().InsertAtTop(m_root);
 
     m_tileSize = { 25, 25 };
@@ -278,6 +279,7 @@ void Minesweeper::Reveal(int index)
             auto shapeVisual = m_compositor.CreateShapeVisual();
             shapeVisual.RelativeSizeAdjustment({ 1, 1 });
             shapeVisual.Shapes().Append(shape);
+            shapeVisual.BorderMode(CompositionBorderMode::Soft);
             visual.Children().InsertAtTop(shapeVisual);
         }
     }
