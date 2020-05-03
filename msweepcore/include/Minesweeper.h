@@ -55,6 +55,7 @@ private:
         winrt::Windows::UI::Composition::CompositionGeometry const& geometry,
         winrt::Windows::UI::Composition::CompositionColorBrush const& brush,
         winrt::Windows::Foundation::Numerics::float2 offset);
+    void GenerateAssets();
 
 private:
     winrt::Windows::UI::Composition::Compositor m_compositor{ nullptr };
@@ -80,4 +81,9 @@ private:
 
     bool m_mineAnimationPlaying = false;
     bool m_gameOver = false;
+
+    winrt::Windows::UI::Composition::CompositionColorBrush m_mineBrush{ nullptr };
+    std::map<MineState, winrt::Windows::UI::Composition::CompositionColorBrush> m_mineStateBrushes;
+    std::map<int, winrt::Windows::UI::Composition::CompositionColorBrush> m_mineCountBackgroundBrushes;
+    std::map<int, winrt::Windows::UI::Composition::CompositionShape> m_mineCountShapes;
 };
