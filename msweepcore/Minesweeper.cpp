@@ -8,6 +8,21 @@ using namespace Windows::Foundation::Numerics;
 using namespace Windows::UI;
 using namespace Windows::UI::Composition;
 
+MineState CycleMineState(MineState const& mineState)
+{
+    switch (mineState)
+    {
+    case MineState::Empty:
+        return MineState::Flag;
+    case MineState::Flag:
+        return MineState::Question;
+    case MineState::Question:
+        return MineState::Empty;
+    case MineState::Revealed:
+        throw std::runtime_error("We shouldn't be cycling a revealed tile!");
+    }
+}
+
 Minesweeper::Minesweeper(
     ContainerVisual const& parentVisual,
     float2 parentSize)
@@ -109,8 +124,7 @@ void Minesweeper::OnPointerPressed(
         {
             if (isRightButton || isEraser)
             {
-                auto state = m_mineStates[index];
-                state = (MineState)((state + 1) % MineState::Revealed);
+                auto state = CycleMineState(m_mineStates[index]);
                 m_mineStates[index] = state;
                 visual.Brush(GetColorBrushFromMineState(state));
             }

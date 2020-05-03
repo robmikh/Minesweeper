@@ -1,6 +1,6 @@
 #pragma once
 
-enum  MineState
+enum class MineState
 {
     Empty = 0,
     Flag = 1,
