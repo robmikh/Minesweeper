@@ -278,12 +278,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\Minesweeper.h" />
+    <ClInclude Include="include\MinesweeperBoard.h" />
     <ClInclude Include="pch.h">
       <DeploymentContent>false</DeploymentContent>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Minesweeper.cpp" />
+    <ClCompile Include="MinesweeperBoard.cpp" />
     <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>

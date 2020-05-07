@@ -3,10 +3,12 @@
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="include\Minesweeper.h" />
+    <ClInclude Include="include\MinesweeperBoard.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Minesweeper.cpp" />
+    <ClCompile Include="MinesweeperBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -8,24 +8,10 @@ using namespace Windows::Foundation::Numerics;
 using namespace Windows::UI;
 using namespace Windows::UI::Composition;
 
-MineState CycleMineState(MineState const& mineState)
-{
-    switch (mineState)
-    {
-    case MineState::Empty:
-        return MineState::Flag;
-    case MineState::Flag:
-        return MineState::Question;
-    case MineState::Question:
-        return MineState::Empty;
-    case MineState::Revealed:
-        throw std::runtime_error("We shouldn't be cycling a revealed tile!");
-    }
-}
-
 Minesweeper::Minesweeper(
     ContainerVisual const& parentVisual,
     float2 parentSize)
+   : m_board(16, 16, 40)
 {
     m_compositor = parentVisual.Compositor();
     m_root = m_compositor.CreateSpriteVisual();
@@ -59,14 +45,14 @@ Minesweeper::Minesweeper(
     m_currentSelectionY = -1;
 
     GenerateAssets();
-
-    NewGame(16, 16, 40);
+    
+    NewGame();
     OnParentSizeChanged(parentSize);
 }
 
 void Minesweeper::OnPointerMoved(float2 point)
 {
-    if (m_gameOver || m_mineAnimationPlaying)
+    if (m_board.IsGameOver() || m_mineAnimationPlaying)
     {
         return;
     }
@@ -81,10 +67,10 @@ void Minesweeper::OnPointerMoved(float2 point)
 
     int x = point.x / (m_tileSize.x + m_margin.x);
     int y = point.y / (m_tileSize.y + m_margin.y);
-    int index = x * m_gameBoardHeight + y;
+    int index = x * m_board.GetBoardHeight() + y;
 
-    if (IsInBounds(x, y) &&
-        m_mineStates[index] != MineState::Revealed)
+    if (m_board.IsInBounds(x, y) &&
+        m_board.GetMineState(x, y) != MineState::Revealed)
     {
         auto visual = m_tiles[index];
 
@@ -111,28 +97,27 @@ void Minesweeper::OnPointerPressed(
     bool isRightButton,
     bool isEraser)
 {
-    if (m_gameOver && !m_mineAnimationPlaying)
+    if (m_board.IsGameOver() && !m_mineAnimationPlaying)
     {
-        NewGame(m_gameBoardWidth, m_gameBoardWidth, m_numMines);
+       NewGame();
     }
 
     if (m_currentSelectionX >= 0.0f ||
         m_currentSelectionY >= 0.0f)
     {
-        int index = ComputeIndex(m_currentSelectionX, m_currentSelectionY);
+        int index = m_board.ComputeIndex(m_currentSelectionX, m_currentSelectionY);
         auto visual = m_tiles[index];
 
-        if (m_mineStates[index] != MineState::Revealed)
+        if (m_board.GetMineState(m_currentSelectionX, m_currentSelectionY) != MineState::Revealed)
         {
             if (isRightButton || isEraser)
             {
-                auto state = CycleMineState(m_mineStates[index]);
-                m_mineStates[index] = state;
-                visual.Brush(GetColorBrushFromMineState(state));
+                m_board.CycleMineState(m_currentSelectionX, m_currentSelectionY);
+                visual.Brush(GetColorBrushFromMineState(m_board.GetMineState(m_currentSelectionX, m_currentSelectionY)));
             }
-            else if (m_mineStates[index] == MineState::Empty)
+            else if (m_board.GetMineState(m_currentSelectionX, m_currentSelectionY) == MineState::Empty)
             {
-                if (Sweep(m_currentSelectionX, m_currentSelectionY))
+                if (m_board.Sweep(m_currentSelectionX, m_currentSelectionY))
                 {
                     // We hit a mine! Setup and play an animation while locking any input.
                     auto hitX = m_currentSelectionX;
@@ -156,7 +141,6 @@ void Minesweeper::OnPointerPressed(
                     batch.End();
 
                     m_mineAnimationPlaying = true;
-                    m_gameOver = true;
                 }
                 // TODO: Detect that the player has won
             }
@@ -164,20 +148,42 @@ void Minesweeper::OnPointerPressed(
     }
 }
 
-void Minesweeper::NewGame(int boardWidth, int boardHeight, int mines)
+void Minesweeper::NewGame()
 {
-    m_gameBoardWidth = boardWidth;
-    m_gameBoardHeight = boardHeight;
+   m_board.NewGame([this](int x, int y)
+   {
+      int indexRevealed = m_board.ComputeIndex(x, y);
+      auto visual = m_tiles[indexRevealed];
+
+      if (m_board.IsMine(x, y))
+      {
+         visual.Brush(m_mineBrush);
+      }
+      else
+      {
+         int count = m_board.GetSurroundingMineCount(x, y);
+         visual.Brush(GetColorBrushFromMineCount(count));
+      
+         if (count > 0)
+         {
+            auto shape = GetShapeFromMineCount(count);
+            auto shapeVisual = m_compositor.CreateShapeVisual();
+            shapeVisual.RelativeSizeAdjustment({ 1, 1 });
+            shapeVisual.Shapes().Append(shape);
+            shapeVisual.BorderMode(CompositionBorderMode::Soft);
+            visual.Children().InsertAtTop(shapeVisual);
+         }
+      }
+   });
 
     m_gameBoard.Children().RemoveAll();
     m_tiles.clear();
-    m_mineStates.clear();
 
-    m_gameBoard.Size((m_tileSize + m_margin) * float2(m_gameBoardWidth, m_gameBoardHeight));
+    m_gameBoard.Size((m_tileSize + m_margin) * float2(m_board.GetBoardWidth(), m_board.GetBoardHeight()));
 
-    for (int x = 0; x < m_gameBoardWidth; x++)
+    for (int x = 0; x < m_board.GetBoardWidth(); x++)
     {
-        for (int y = 0; y < m_gameBoardHeight; y++)
+        for (int y = 0; y < m_board.GetBoardHeight(); y++)
         {
             SpriteVisual visual = m_compositor.CreateSpriteVisual();
             visual.Size(m_tileSize);
@@ -187,14 +193,10 @@ void Minesweeper::NewGame(int boardWidth, int boardHeight, int mines)
 
             m_gameBoard.Children().InsertAtTop(visual);
             m_tiles.push_back(visual);
-            m_mineStates.push_back(MineState::Empty);
         }
     }
 
     m_mineAnimationPlaying = false;
-    m_gameOver = false;
-    m_mineGenerationState = MineGenerationState::Deferred;
-    m_numMines = mines;
 
     m_selectionVisual.IsVisible(false);
     m_currentSelectionX = -1;
@@ -230,95 +232,6 @@ float Minesweeper::ComputeScaleFactor(float2 windowSize)
     return scaleFactor;
 }
 
-bool Minesweeper::Sweep(int x, int y)
-{
-    if (m_mineGenerationState == MineGenerationState::Deferred)
-    {
-        // We don't want the first thing that the user clicks to be a mine. 
-        // Generate mines but avoid putting it where the user clicked.
-        GenerateMines(m_numMines, x, y);
-        m_mineGenerationState = MineGenerationState::Generated;
-    }
-
-    bool hitMine = false;
-    std::queue<int> sweeps;
-    sweeps.push(ComputeIndex(x, y));
-    Reveal(sweeps.front());
-
-    while (!sweeps.empty())
-    {
-        int index = sweeps.front();
-        int currentx = ComputeXFromIndex(index);
-        int currenty = ComputeYFromIndex(index);
-
-        if (m_mines[index])
-        {
-            // We hit a mine, game over
-            hitMine = true;
-            break;
-        }
-
-        if (m_neighborCounts[index] == 0)
-        {
-            PushIfUnmarked(sweeps, currentx - 1, currenty - 1);
-            PushIfUnmarked(sweeps, currentx, currenty - 1);
-            PushIfUnmarked(sweeps, currentx + 1, currenty - 1);
-            PushIfUnmarked(sweeps, currentx + 1, currenty);
-            PushIfUnmarked(sweeps, currentx + 1, currenty + 1);
-            PushIfUnmarked(sweeps, currentx, currenty + 1);
-            PushIfUnmarked(sweeps, currentx - 1, currenty + 1);
-            PushIfUnmarked(sweeps, currentx - 1, currenty);
-        }
-
-        sweeps.pop();
-    }
-
-    return hitMine;
-}
-
-void Minesweeper::Reveal(int index)
-{
-    auto visual = m_tiles[index];
-
-    if (m_mines[index])
-    {
-        visual.Brush(m_mineBrush);
-    }
-    else
-    {
-        int count = m_neighborCounts[index];
-        visual.Brush(GetColorBrushFromMineCount(count));
-
-        if (count > 0)
-        {
-            auto shape = GetShapeFromMineCount(count);
-            auto shapeVisual = m_compositor.CreateShapeVisual();
-            shapeVisual.RelativeSizeAdjustment({ 1, 1 });
-            shapeVisual.Shapes().Append(shape);
-            shapeVisual.BorderMode(CompositionBorderMode::Soft);
-            visual.Children().InsertAtTop(shapeVisual);
-        }
-    }
-
-    m_mineStates[index] = MineState::Revealed;
-}
-
-bool Minesweeper::IsInBoundsAndUnmarked(int x, int y)
-{
-    int index = ComputeIndex(x, y);
-    return IsInBounds(x, y) && m_mineStates[index] == MineState::Empty;
-}
-
-void Minesweeper::PushIfUnmarked(std::queue<int> & sweeps, int x, int y)
-{
-    if (IsInBoundsAndUnmarked(x, y))
-    {
-        int index = ComputeIndex(x, y);
-        Reveal(index);
-        sweeps.push(index);
-    }
-}
-
 CompositionColorBrush Minesweeper::GetColorBrushFromMineState(MineState state)
 {
     return m_mineStateBrushes.at(state);
@@ -327,127 +240,6 @@ CompositionColorBrush Minesweeper::GetColorBrushFromMineState(MineState state)
 CompositionColorBrush Minesweeper::GetColorBrushFromMineCount(int count)
 {
     return m_mineCountBackgroundBrushes.at(count);
-}
-
-void Minesweeper::GenerateMines(int numMines, int excludeX, int excludeY)
-{
-    m_mines.clear();
-    for (int x = 0; x < m_gameBoardWidth; x++)
-    {
-        for (int y = 0; y < m_gameBoardHeight; y++)
-        {
-            m_mines.push_back(false);
-        }
-    }
-
-    srand(time(0));
-    for (int i = 0; i < numMines; i++)
-    {
-        int index = -1;
-        auto excludeIndex = ComputeIndex(excludeX, excludeY);
-        do
-        {
-            index = GenerateIndex(0, m_gameBoardWidth * m_gameBoardHeight - 1);
-        } while (index == excludeIndex || m_mines[index]);
-
-        m_mines[index] = true;
-    }
-
-    m_neighborCounts.clear();
-    for (int i = 0; i < m_mines.size(); i++)
-    {
-        int x = ComputeXFromIndex(i);
-        int y = ComputeYFromIndex(i);
-
-        if (m_mines[i])
-        {
-            // -1 means a mine
-            m_neighborCounts.push_back(-1);
-        }
-        else
-        {
-            int count = GetSurroundingMineCount(x, y);
-            m_neighborCounts.push_back(count);
-        }
-    }
-}
-
-int Minesweeper::GenerateIndex(int min, int max)
-{
-    return min + (rand() % static_cast<int>(max - min + 1));
-}
-
-int Minesweeper::ComputeIndex(int x, int y)
-{
-    return x * m_gameBoardHeight + y;
-}
-
-int Minesweeper::ComputeXFromIndex(int index)
-{
-    return index / m_gameBoardHeight;
-}
-
-int Minesweeper::ComputeYFromIndex(int index)
-{
-    return index % m_gameBoardHeight;
-}
-
-bool Minesweeper::IsInBounds(int x, int y)
-{
-    return ((x >= 0 && x < m_gameBoardWidth) &&
-        (y >= 0 && y < m_gameBoardHeight));
-}
-
-bool Minesweeper::TestSpot(int x, int y)
-{
-    return IsInBounds(x, y) && m_mines[ComputeIndex(x, y)];
-}
-
-int Minesweeper::GetSurroundingMineCount(int x, int y)
-{
-    int count = 0;
-
-    if (TestSpot(x + 1, y))
-    {
-        count++;
-    }
-
-    if (TestSpot(x - 1, y))
-    {
-        count++;
-    }
-
-    if (TestSpot(x, y + 1))
-    {
-        count++;
-    }
-
-    if (TestSpot(x, y - 1))
-    {
-        count++;
-    }
-
-    if (TestSpot(x + 1, y + 1))
-    {
-        count++;
-    }
-
-    if (TestSpot(x - 1, y - 1))
-    {
-        count++;
-    }
-
-    if (TestSpot(x - 1, y + 1))
-    {
-        count++;
-    }
-
-    if (TestSpot(x + 1, y - 1))
-    {
-        count++;
-    }
-
-    return count;
 }
 
 void Minesweeper::PlayMineAnimation(int index, TimeSpan const& delay)
@@ -473,10 +265,10 @@ void Minesweeper::PlayMineAnimation(int index, TimeSpan const& delay)
 
 void Minesweeper::CheckTileForMineForAnimation(int x, int y, std::queue<int>& mineIndices, int& visitedTiles, int& minesInRing)
 {
-    if (IsInBounds(x, y))
+    if (m_board.IsInBounds(x, y))
     {
-        auto tileIndex = ComputeIndex(x, y);
-        if (m_mines[tileIndex])
+        auto tileIndex = m_board.ComputeIndex(x, y);
+        if (m_board.IsMine(x, y))
         {
             mineIndices.push(tileIndex);
             minesInRing++;
@@ -496,7 +288,7 @@ void Minesweeper::PlayAnimationOnAllMines(int centerX, int centerY)
     {
         if (ringLevel == 0)
         {
-            auto hitMineIndex = ComputeIndex(centerX, centerY);
+            auto hitMineIndex = m_board.ComputeIndex(centerX, centerY);
             mineIndices.push(hitMineIndex);
             minesPerRing.push(1);
             visitedTiles++;
