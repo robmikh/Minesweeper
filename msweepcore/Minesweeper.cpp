@@ -248,7 +248,7 @@ void Minesweeper::GenerateMines(int numMines, int excludeX, int excludeY)
             // -1 means a mine
             m_neighborCounts.push_back(-1);
             // DEBUG
-#if _DEBUG
+#if SHOW_MINES
             m_ui->UpdateTileWithState({ x, y }, MineState::Question);
 #endif
         }

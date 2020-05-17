@@ -18,3 +18,5 @@
 #include "msweepcore.h"
 
 #include "IndexHelper.h"
+
+#define SHOW_MINES 0
