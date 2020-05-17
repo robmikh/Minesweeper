@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Minesweeper.h"
+#include "msweepcore.h"
 #include "MainWindow.h"
 
 namespace winrt
@@ -33,7 +33,7 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     // Create our game
     winrt::SizeInt32 windowSize = { 800, 600 };
-    auto game = std::make_shared<Minesweeper>(root, winrt::float2{ (float)windowSize.Width, (float)windowSize.Height });
+    auto game = CreateMinesweeper(root, winrt::float2{ (float)windowSize.Width, (float)windowSize.Height });
 
     // Create our main window
     auto window = MainWindow(L"Minesweeper.Win32", game, windowSize);

@@ -2,11 +2,19 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="include\Minesweeper.h" />
+    <ClInclude Include="CompUI.h" />
+    <ClInclude Include="Minesweeper.h" />
+    <ClInclude Include="include\msweepcore.h" />
+    <ClInclude Include="IndexHelper.h" />
+    <ClInclude Include="CompAssets.h" />
+    <ClInclude Include="VisualGrid.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Minesweeper.cpp" />
+    <ClCompile Include="CompUI.cpp" />
+    <ClCompile Include="CompAssets.cpp" />
+    <ClCompile Include="VisualGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

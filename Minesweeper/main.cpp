@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Minesweeper.h"
+#include "msweepcore.h"
 
 using namespace winrt;
 
@@ -44,7 +44,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
         m_target = m_compositor.CreateTargetForCurrentView();
         m_target.Root(m_windowRoot);
 
-        m_minesweeper = std::make_unique<Minesweeper>(m_windowRoot, GetWindowSize());
+        m_minesweeper = CreateMinesweeper(m_windowRoot, GetWindowSize());
 
         m_sizeChanged = m_window.SizeChanged(auto_revoke, { this, &App::OnSizeChanged });
         m_pointerMoved = m_window.PointerMoved(auto_revoke, { this, &App::OnPointerMoved });
@@ -92,7 +92,7 @@ struct App : implements<App, IFrameworkViewSource, IFrameworkView>
     CompositionTarget m_target{ nullptr };
     ContainerVisual m_windowRoot{ nullptr };
 
-    std::unique_ptr<Minesweeper> m_minesweeper{ nullptr };
+    std::shared_ptr<IMinesweeper> m_minesweeper{ nullptr };
 
     CoreWindow::SizeChanged_revoker m_sizeChanged;
     CoreWindow::PointerMoved_revoker m_pointerMoved;

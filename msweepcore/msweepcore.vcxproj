@@ -277,14 +277,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\Minesweeper.h" />
+    <ClInclude Include="CompAssets.h" />
+    <ClInclude Include="CompUI.h" />
+    <ClInclude Include="include\msweepcore.h" />
+    <ClInclude Include="IndexHelper.h" />
+    <ClInclude Include="Minesweeper.h" />
     <ClInclude Include="pch.h">
       <DeploymentContent>false</DeploymentContent>
     </ClInclude>
+    <ClInclude Include="VisualGrid.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CompAssets.cpp" />
+    <ClCompile Include="CompUI.cpp" />
     <ClCompile Include="Minesweeper.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="VisualGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
