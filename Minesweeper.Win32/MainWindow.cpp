@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Minesweeper.h"
+#include "msweepcore.h"
 #include "MainWindow.h"
 #include <Windowsx.h>
 
@@ -29,7 +29,7 @@ void MainWindow::RegisterWindowClass()
 
 MainWindow::MainWindow(
     std::wstring const& titleString,
-    std::shared_ptr<Minesweeper> const& game,
+    std::shared_ptr<IMinesweeper> const& game,
     winrt::Windows::Graphics::SizeInt32 const& windowSize)
 {
     auto instance = winrt::check_pointer(GetModuleHandleW(nullptr));
