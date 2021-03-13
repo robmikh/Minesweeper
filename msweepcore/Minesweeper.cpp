@@ -57,7 +57,11 @@ void Minesweeper::OnPointerMoved(float2 point)
     {
         if (m_mineStates[m_indexHelper->ComputeIndex(tile->x, tile->y)] != MineState::Revealed)
         {
-            selectedTile.swap(std::optional<TileCoordinate>(tile));
+            TileCoordinate result = {};
+            result.x = tile->x;
+            result.y = tile->y;
+            auto temp = std::optional<TileCoordinate>(result);
+            selectedTile.swap(temp);
         }
     }
     m_ui->SelectTile(selectedTile);
