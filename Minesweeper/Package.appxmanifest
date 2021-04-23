@@ -3,7 +3,7 @@
   <Identity
     Name="583aafdb-2e2a-48eb-8394-82390b9877d2"
     Publisher="CN=robmi"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
   <mp:PhoneIdentity PhoneProductId="583aafdb-2e2a-48eb-8394-82390b9877d2" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
   <Properties>
     <DisplayName>Minesweeper</DisplayName>
@@ -18,13 +18,15 @@
   </Resources>
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="Minesweeper.App">
-      <uap:VisualElements DisplayName="Minesweeper" Description="A project for a C++/WinRT Universal Windows Platform (UWP) app directly implementing CoreApplication"
-        Square150x150Logo="Assets\Logo.png" Square44x44Logo="Assets\SmallLogo.png" BackgroundColor="#464646">
-        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+      <uap:VisualElements DisplayName="Minesweeper" Description="A project for a C++/WinRT Universal Windows Platform (UWP) app directly implementing CoreApplication" BackgroundColor="#464646" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\LockScreenLogo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+        <uap:SplashScreen Image="Assets\SplashScreen.png"/>
       </uap:VisualElements>
     </Application>
   </Applications>
-  <Capabilities>
-    <Capability Name="internetClient" />
-  </Capabilities>
 </Package>
